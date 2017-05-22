@@ -1,0 +1,2 @@
+# troubleshooting-and-optimization
+记录工作中的或者网上看到的一些故障处理以及性能调优，主要是hadoop ecosystem这一块
