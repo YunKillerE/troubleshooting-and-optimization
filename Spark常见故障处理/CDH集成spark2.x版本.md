@@ -21,5 +21,10 @@ http://spark.apache.org/downloads.html
 
     spark.extraListeners=com.cloudera.spark.lineage.ClouderaNavigatorListener
     
-
 然后就可以了
+
+用spark sql时，也会出现问题，同样的方法，删除conf/spark-default.conf中的如下行
+
+    spark.sql.queryExecutionListeners=com.cloudera.spark.lineage.ClouderaNavigatorListener
+
+    
