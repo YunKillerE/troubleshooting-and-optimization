@@ -26,3 +26,12 @@ User class threw exception: org.apache.spark.sql.catalyst.analysis.NoSuchTableEx
 export HIVE_CLASSPATH=$(find /opt/cloudera/parcels/CDH/lib/hive/lib/ -name 'hive*.jar' -print0 | sed 's/\x0/,/g')
 
 spark-submit --jars $HIVE_CLASSPATH --master yarn-client --num-executors 8 --executor-memory 4G --executor-cores 2 /home/develop/shaoxing/crime.jar
+
+
+# 找不到hive表情况可能是spark-defaults.conf中缺失配置
+
+```
+spark.sql.hive.metastore.jars=${env:HADOOP_COMMON_HOME}/../hive/lib/*:${env:HADOOP_COMMON_HOME}/client/*
+spark.sql.hive.metastore.version=1.1.0
+spark.sql.catalogImplementation=hive
+```
