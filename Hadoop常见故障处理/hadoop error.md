@@ -2,6 +2,8 @@
 
 https://www.quora.com/How-should-one-solve-Bad-connect-ack-with-firstBadLink-DataNode-problem-in-Hadoop
 
+http://www.larsgeorge.com/2012/03/hadoop-hbase-and-xceivers.html
+
 1、Firstly, check [Deprecated Properties](https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-common/DeprecatedProperties.html)
 
 make sure your Hadoop’s version which supported “dfs.datanode.max.xcievers” or “dfs.datanode.max.transfer.threads” in hdfs-site.xml;
