@@ -26,7 +26,7 @@
 通过上面命令格式化导出了所有zk数据，有大量如下数据，这是hive共享锁，不知道为什么hive共享锁会占用这么大的zk存储
 
 ```
-/hive_zookeeper_namespace_hive/banma/LOCK-SHARED-0003702236
+/hive_zookeeper_namespace_hive/xxx/LOCK-SHARED-0003702236
   cZxid = 0x0000eb00064c31
   ctime = Wed Nov 27 17:45:15 CST 2019
   mZxid = 0x0000eb00064c31
