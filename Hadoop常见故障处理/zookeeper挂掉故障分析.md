@@ -20,3 +20,21 @@
 
 	这里有个疑问是为什么snapshot会突然增长那么大？以前的snapshot一般只有几十M，恢复正常后snapshot也只有几十M
 	所以试着通过java -cp /alidata1/cloudera/parcels/CDH/lib/zookeeper/zookeeper.jar:/alidata1/cloudera/parcels/CDH/lib/zookeeper/lib/* org.apache.zookeeper.server.SnapshotFormatter /var/lib/zookeeper/version-2/snapshot.eb00026fab来分析里面有什么数据，但是貌似看不出来
+
+# 真实原因
+
+通过上面命令格式化导出了所有zk数据，有大量如下数据，这是hive共享锁，不知道为什么hive共享锁会占用这么大的zk存储
+
+```
+/hive_zookeeper_namespace_hive/banma/LOCK-SHARED-0003702236
+  cZxid = 0x0000eb00064c31
+  ctime = Wed Nov 27 17:45:15 CST 2019
+  mZxid = 0x0000eb00064c31
+  mtime = Wed Nov 27 17:45:15 CST 2019
+  pZxid = 0x0000eb00064c31
+  cversion = 0
+  dataVersion = 0
+  aclVersion = 0
+  ephemeralOwner = 0x26eabb6e5880068
+  dataLength = 1000090
+  ```
