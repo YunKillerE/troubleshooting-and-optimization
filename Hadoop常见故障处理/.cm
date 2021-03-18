@@ -1,0 +1,78 @@
+1,mysql
+```
+[client]
+default-character-set=utf8
+[mysqld]
+datadir=/alidata2/data/mysql
+socket=/var/lib/mysql/mysql.sock
+transaction-isolation = READ-COMMITTED
+
+default-storage-engine=INNODB
+character-set-server=utf8
+
+symbolic-links = 0
+
+key_buffer_size = 32M
+max_allowed_packet = 32M
+thread_stack = 256K
+thread_cache_size = 64
+query_cache_limit = 8M
+query_cache_size = 64M
+query_cache_type = 1
+
+max_connections = 550
+
+server_id=1
+
+binlog_format = mixed
+
+read_buffer_size = 2M
+read_rnd_buffer_size = 16M
+sort_buffer_size = 8M
+join_buffer_size = 8M
+
+
+innodb_file_per_table = 1
+innodb_flush_log_at_trx_commit  = 2
+innodb_log_buffer_size = 64M
+innodb_buffer_pool_size = 4G
+innodb_thread_concurrency = 8
+innodb_flush_method = O_DIRECT
+innodb_log_file_size = 512M
+
+[mysqld_safe]
+log-error=/var/log/mysql/mysqld.log
+
+```
+3，cm部署
+• https://docs.cloudera.com/documentation/enterprise/6/6.3/topics/installation.html
+
+
+4，cdh部署
+• https://docs.cloudera.com/documentation/enterprise/6/6.3/topics/installation.html
+
+
+5，cm配置TLS发布公网
+$JAVA_HOME/bin/keytool -genkeypair -alias $(hostname -f) -keyalg RSA -keystore /opt/cloudera/security/pki/$(hostname -f).jks -keysize 2048 -dname "CN=$(hostname -f),OU=data,O=banma,L=ShangHai,ST=ShangHai,C=CN" -ext san=dns:$(hostname -f)
+$JAVA_HOME/bin/keytool -certreq -alias $(hostname -f) -keystore /opt/cloudera/security/pki/$(hostname -f).jks -file /opt/cloudera/security/pki/$(hostname -f).csr -ext san=dns:$(hostname -f)
+cp $JAVA_HOME/jre/lib/security/cacerts $JAVA_HOME/jre/lib/security/jssecacerts
+keytool -export -alias $(hostname -f) -keystore /opt/cloudera/security/pki/$(hostname -f).jks -rfc -file /opt/cloudera/security/pki/$(hostname -f).cer
+keytool -importkeystore -srckeystore /opt/cloudera/security/pki/$(hostname -f).jks -destkeystore /opt/cloudera/security/pki/$(hostname -f).p12 -deststoretype PKCS12
+openssl pkcs12 -in /opt/cloudera/security/pki/$(hostname -f).p12  -nodes -nocerts -out /opt/cloudera/security/pki/$(hostname -f).key
+keytool -import -alias $(hostname -f) -file /opt/cloudera/security/pki/$(hostname -f).cer -keystore $JAVA_HOME/jre/lib/security/jssecacerts -storepass changeit
+
+
+nginx:
+server{
+        listen       80;
+        server_name  cdh.sit.immotors.com;
+        location / {
+            proxy_pass https://localhost:7183;
+            proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+            proxy_redirect off;
+            proxy_buffering off;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+}
