@@ -1,0 +1,78 @@
+1，步骤
+自签名证书一共三个步骤:
+  1.生成非对称密钥 
+  2.创建证书请求文件 
+  3.自签名证书
+
+```
+##新建一个文件夹，cd到此文件夹，后续操作生成的文件，使用的文件均在次文件夹下。
+1.生成非对称密钥 
+//rsa密钥生成 
+openssl genrsa -out rsa.key 2048 
+//查看密钥 
+openssl rsa -text -in rsa.key 
+//导出公钥 
+openssl rsa -in rsa.key -pubout -out rsa-public.key 
+```
+
+
+```
+2.创建证书的签名文件csr 
+//创建csr文件 
+openssl req -new -key rsa.key -out xx.xx.com.csr    
+//Common Name :www.example.com  
+//CommonName为证书颁发给的域名，一定要填写正确，如果泛域名证书这里填*.xx.com
+//其他选项符合输入条件的情况下可随意填写，如果国家CN，省份GD，城市guangzhou等
+
+//查看csr文件 
+openssl req -text -in xx.xx.com.csr -noout
+```
+
+```
+3.自签名证书 
+openssl x509 -req -days 365 -in xx.xx.com.csr -signkey rsa.key -out xx.xx.com.crt
+//也可根据使用情况生成crt格式的文件，如rsa_example.crt
+```
+
+2，多域名证书
+
+```
+1.生成非对称密钥，如单域名证书
+```
+
+```
+2.新建md.cnf文件,从opessl.cnf中复制相关字段到md.cnf并修改 
+[req] 
+prompt = no 
+distinguished_name = dn365 
+req_extensions = ext 
+[dn] 
+CN = www.example.com 
+emailAddress = example@example.com 
+O = example 
+L = guangzhou 
+ST = GD 
+C = CN
+[ext]
+subjectAltName = DNS:www.1111.com,DNS:www.2222.com,DNS:www.3333.com,IP:192.168.1.1
+```
+
+```
+//使用md.cnf创建csr文件
+openssl req -new -config md.cnf -key md.key -out md.csr
+```
+
+
+```
+3.自签名多域名证书 
+//新建md.ext文件,写入以下内容 
+subjectAltName = 
+DNS:www.1111.com,DNS:www.2222.com,DNS = www.3333.com,IP:192.168.1.1 
+//内容和生成csr文件时的md.cnf文件一致 
+
+//使用md.ext文件自签名证书
+openssl x509 -req -days 365 -in md.csr -signkey md.key -out md.der -extfile md.ext
+```
+
+
+
