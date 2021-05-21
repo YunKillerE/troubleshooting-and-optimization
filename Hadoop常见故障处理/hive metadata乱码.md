@@ -91,3 +91,11 @@ partitioned by (pt string comment '当前时间，用于分区字段')
 ;
 ```
 
+## hive udf jar
+
+hive服务高级代码安全配置增加
+
+```
+hive.reloadable.aux.jars.path
+/alidata1/hiveaux
+```
