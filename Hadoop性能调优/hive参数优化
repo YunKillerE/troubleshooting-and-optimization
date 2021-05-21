@@ -1,0 +1,193 @@
+--压缩配置：
+--  map/reduce 输出压缩（一般采用序列化文件存储）
+set hive.exec.compress.output=true;
+set mapred.output.compression.codec=org.apache.hadoop.io.compress.GzipCodec;
+set mapred.output.compression.type=BLOCK;
+
+--任务中间压缩
+set hive.exec.compress.intermediate=true;
+set hive.intermediate.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+set hive.intermediate.compression.type=BLOCK;
+
+--优化
+set hive.exec.dynamic.partition.mode=nonstrict;--设置非严格模式
+set hive.exec.dynamic.partition=true;--设置动态分区
+set hive.exec.max.dynamic.partitions.pernode=1000;--设置动态分区每个节点最多可划分为多少个分区
+set hive.exec.max.dynamic.partitions=2000;--设置动态分区时的分区最大数量
+set mapred.reduce.tasks = 20;--设置reduce的任务数量，可用于优化插入分区表时的执行效率
+set hive.exec.reducers.max=100;--设置reduce最大数量
+set spark.executor.cores=4;--设置每个executor用的core
+set spark.executor.memory=8g;--设置每个executor的内存大小
+set mapreduce.map.memory.mb=8192;--设置map任务的内存大小（container大小）
+set mapreduce.reduce.memory.mb=8192;--设置reduce任务使用内存大小
+set mapred.reduce.child.java.opts=-server -Xmx4000m -Djava.net.preferIPv4Stack=true;
+
+
+
+--map端内存溢出可以参考下面两个参数
+set mapred.map.child.java.opts=-server -Xmx2048m -Djava.net.preferIPv4Stack=true;
+set mapreduce.map.child.java.opts="-Xmx3072m"
+set hive.execution.engine=mr;--设置执行hive引擎为mr
+set hive.merge.mapredfiles= true;--合并小文件
+set hive.merge.mapfiles = true;
+set hive.merge.size.per.task = 256000000;
+set hive.merge.smallfiles.avgsize = 256000000;
+set hive.input.format = org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+set hive.optimize.cp = true;
+set hive.exec.parallel=true;
+set hive.exec.parallel.thread.number=8;
+set mapreduce.job.running.map.limit=10;--限制map运行数量
+set hive.mapjoin.smalltable.filesize=26214400;--默认是25M
+set hive.exec.max.created.files = 200000;--增大hive文件创建数量
+set yarn.app.mapreduce.am.resource.mb=4096;
+set hive.tez.java.opts=-Xmx8192m -XX:MaxPermSize=256m;
+SET hive.tez.container.size=10240;
+set mapreduce.input.fileinputformat.split.maxsize=256000000;
+set mapreduce.input.fileinputformat.split.minsize.per.node=256000000;
+set mapreduce.input.fileinputformat.split.minsize.per.rack=256000000;
+set hive.exec.reducers.bytes.per.reducer=5120000000;--设置每个reducer处理的数据
+
+
+
+--总共有三种策略{"HYBRID", "BI", "ETL"}), 默认是"HYBRID","This is not a user level config. 
+-- BI strategy is used when the requirement is to spend less time in split generation as opposed to query execution (split generation does not read or cache file footers). 
+-- ETL strategy is used when spending little more time in split generation is acceptable (split generation reads and caches file footers). 
+-- HYBRID chooses between the above strategies based on heuristics."),
+set hive.exec.orc.split.strategy=BI;(ORC split generation failed with exception: java.lang.OutOfMemoryError)
+set hive.mapjoin.localtask.max.memory.usage=0.999;--本地任务可以使用内存的百分比 默认值：0.90
+-- map join做group by操作时，可使用多大的内存来存储数据。若数据太大则不会保存在内存里 默认值：0.55
+set hive.mapjoin.followby.gby.localtask.max.memory.usage;
+
+
+--本地mr设置
+set hive.exec.mode.local.auto=true;  --开启本地mr
+--设置local mr的最大输入数据量,当输入数据量小于这个值的时候会采用local  mr的方式
+set hive.exec.mode.local.auto.inputbytes.max=50000000;
+--设置local mr的最大输入文件个数,当输入文件个数小于这个值的时候会采用local mr的方式
+set hive.exec.mode.local.auto.tasks.max=10;
+--当这三个参数同时成立时候，才会采用本地mr
+
+
+set mapreduce.map.java.opts=-Xmx4096m -XX:-UseGCOverheadLimit -- GC overhead limit exceeded
+
+set io.sort.mb=1024;
+--采样
+set hive.limit.optimize.enable=true --- 开启对数据源进行采样的功能
+set hive.limit.row.max.size --- 设置最小的采样容量
+set hive.limit.optimize.limit.file --- 设置最大的采样样本数
+
+set mapred.max.split.size=134217728;          --决定每个map处理的最大的文件大小,可以根据总文件大小以及这个参数的设置调整map的数量，动态调整，当map数量比较小且执行非常慢时，可以将此参数调小
+set mapred.min.split.size.per.node=1024000000;--每个节点，动态调整，当map数量比较小且执行非常慢时，可以将此参数调小
+set mapred.min.split.size.per.rack=1024000000;--每个机架
+--mapred.max.split.size <= mapred.min.split.size.per.node <= mapred.min.split.size.per.rack
+set hive.auto.convert.join=true; --hive自动识别小表，小表自动加载到内存，reduce端Common Join 转化为map join，可解决数据倾斜问题,map端jpoin
+
+
+
+--不产生shuffle
+set hive.skewjoin.key=100000; --这个是join的键对应的记录条数超过这个值则会进行分拆,值根据具体数据量设置
+set hive.optimize.skewjoin = true;--如果是join 过程出现倾斜 应该设置为true,hive 在运行的时候没有办法判断哪个key 会产生多大的倾斜，所以使用这个参数控制倾斜的阈值，如果超过这个值，新的值会发送给那些还没有达到的reduce, 一般可以设置成（处理的总记录数/reduce个数）的2-4倍都可以接受
+set hive.groupby.mapaggr.checkinterval=100000;--这个是group的键对应的记录条数超过这个值则会进行分拆,值根据具体数据量设置(map端聚合操作的记录条数)
+set hive.map.aggr.hash.min.reduction=0.5;--解释：预先取100000条数据聚合,如果聚合后的条数小于100000*0.5，则不再聚合。
+set hive.auto.convert.join.noconditionaltask=True;--将多个map join合并为一个，Hive在基于输入文件大小的前提下将普通JOIN转换成MapJoin，并是否将多个MJ合并成一个
+set hive.auto.convert.join.noconditionaltask.size=100000000;--多个mapjoin转换为1个时，所有小表的文件大小总和的最大值。
+set hive.groupby.skewindata=false;--当选项设定为true，生成的查询计划会有两个MRJob。第一个MRJob 中，
+--Map的输出结果集合会随机分布到Reduce中，每个Reduce做部分聚合操作，并输出结果，这样处理的结果是相同的GroupBy Key
+--有可能被分发到不同的Reduce中，从而达到负载均衡的目的；第二个MRJob再根据预处理的数据结果按照GroupBy Key分布到
+--Reduce中（这个过程可以保证相同的GroupBy Key被分布到同一个Reduce中），最后完成最终的聚合操作。
+set hive.optimize.index.filter=true;--自动使用索引，使用聚合索引优化group by操作，如果是orc表，可以使用orc的索引，加快读取hive表的数据
+set mapreduce.job.reduce.slowstart.completedmaps=0.8;--当Map Task完成的比例达到该值后才会为Reduce Task申请资源，默认是0.05,需要特别注意的是，
+--在JobImpl中，如果处于Uber模式下，会将mapreduce.job.reduce.slowstart.completedmaps参数设置为1，这很好理解，因为不管Map Task，还是Reduce Task，均是串行执行的，所以当Map Task完成的比例达到多少值后才会为Reduce Task申请资源，这个值百分百应该是1
+
+set hive.new.job.grouping.set.cardinality = 30;--grouping sets 数量较多时即cube维度过多，这条设置的意义在于告知解释器，group by之前，每条数据复制量在30份以内。
+-- 关闭hive推测执行
+set hive.mapred.reduce.tasks.speculative.execution = false;
+set mapreduce.map.speculative = false;
+set mapreduce.reduce.speculative = false;
+
+--hive on spark
+
+set spark.executor.memory=4g;
+set spark.executor.cores=2;
+set spark.executor.instances=50;
+set spark.serializer=org.apache.spark.serializer.KryoSerializer;
+set spark.default.parallelism = 300;
+set spark.locality.wait = 6;
+set spark.locality.wait.process=6;
+set spark.locality.wait.node=6;
+set spark.locality.wait.rack=6;
+set spark.shuffle.consolidateFiles=true;--map端文件合并
+set spark.shuffle.memoryFraction=0.5;
+
+set mapreduce.map.java.opts=-Xmx2000m -XX:-UseGCOverheadLimit
+
+--map倾斜(数据量大且map分配数据量不合理)
+set hive.exec.parallel=true;
+set hive.exec.parallel.thread.number=2;
+set hive.groupby.skewindata=true;
+set mapred.max.split.size=256000000;
+set mapred.min.split.size.per.node=256000000;
+set mapred.min.split.size.per.rack=256000000;
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+-- 当mapreduce.input.fileinputformat.split.maxsize > mapreduce.input.fileinputformat.split.minsize > dfs.blockSize的情况下，此时的splitSize 将由mapreduce.input.fileinputformat.split.minsize参数决定。
+-- 当mapreduce.input.fileinputformat.split.maxsize > dfs.blockSize > mapreduce.input.fileinputformat.split.minsize的情况下，此时的splitSize 将由dfs.blockSize配置决定。（第二次优化符合此种情况）
+-- 当dfs.blockSize > mapreduce.input.fileinputformat.split.maxsize > mapreduce.input.fileinputformat.split.minsize的情况下，此时的splitSize 将由mapreduce.input.fileinputformat.split.maxsize参数决定。
+--maxSplitSize > minSplitSizeNode > minSplitSizeRack
+
+set mapreduce.input.fileinputformat.split.maxsize=256000000;--map端文件切片大小
+set mapreduce.input.fileinputformat.split.minsize.per.node=256000000;--同一节点的数据块形成切片时，切片大小的最小值
+set mapreduce.input.fileinputformat.split.minsize.per.rack=256000000;--同一机架的数据块形成切片时，切片大小的最小值
+----reduce端小文件合并（即MR任务结束后进行merge）
+set hive.merge.mapfiles=true;
+set hive.merge.mapredfiles=true;
+set hive.merge.size.per.task=256000000;
+set hive.merge.smallfiles.avgsize=256000000;
+
+set dfs.namenode.handler.count=20;--设置该值的一般原则是将其设置为集群大小的自然对数乘以20，即20logN，N为集群大小。  https://blog.csdn.net/turk/article/details/79723963
+set mapreduce.task.timeout=36000000;--MapReduce设置参数防止超时
+--COST BASED QUERY OPTIMIZATION(CBO) cbo可以优化hive的每次查询，使用CBO，需要开启下面四个选项。
+set hive.cbo.enable=true;--如果数据已经根据相同的key做好聚合，则去除多余的map/reduce作业
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
+
+
+
+set mapreduce.reduce.shuffle.parallelcopies=10;  shuffle开启的fetcher线程数 apache默认5，choudera默认10
+          -- shuffle使用的内存比例。
+mapreduce.reduce.shuffle.input.buffer.percent=0.6：--可以从0.2开始向上调。当只有20%的heap size分配给shuffle buffer的时候不容易出现OOM。
+        -- 单个shuffle任务能使用的内存限额，设置为0.15，即为 Shuffle内存 * 0.15。
+        -- 低于此值可以输出到内存，否则输出到磁盘。
+    mapreduce.reduce.shuffle.memory.limit.percent: 
+       -- shuffle的数据量到Shuffle内存 ** 0.9的时候，启动合并。
+   mapreduce.reduce.shuffle.merge.percent：设置为0.9。
+--------------------- 
+
+set mapreduce.reduce.shuffle.memory.limit.percent=0.1;
+set hive.map.aggr.hash.percentmemory = 0.25;--Hive Map 端聚合的哈稀存储所占用虚拟机的内存比例。 当内存的Map大小，占到JVM配置的Map进程的25%的时候(默认是50%)，就将这个数据flush到reducer去，以释放内存Map的空间。 
+set hive.map.aggr.hash.force.flush.memory.threshold=0.9 --map端做聚合操作是hash表的最大可用内容，大于该值则会触发flush
+set hive.ignore.mapjoin.hint=false; --（默认值：true；是否忽略mapjoin hint 即HQL 语句中的 mapjoin 标记）
+set hive.auto.convert.join.noconditionaltask=true; --（默认值：true；将普通的join转化为普通的mapjoin时，是否将多个mapjoin转化为一个mapjoin）
+set hive.auto.convert.join.noconditionaltask.size=60000000;--（将多个mapjoin转化为一个mapjoin时，其表的最大值）
+set hive.stats.autogather=false;--即插入数据时会优化统计，如此在大的动态分区时load数据后会有一段很长时间的统计，且操作hive元数据表，例如每个分区的文件数，行数等等。耗时比较长时可能会timeout，需要将其设成false。
+
+
+-- Hadoop任务可能引起OOM错误的原因有很多。一般情况下，首先检查是否重设了hadoop参数：mapred.child.java.opts，一般设为-Xmx2000m，即使用2G的最大堆内存。
+-- Hive中可能引起OOM的原因及相关的修复设定如下表所示：
+
+-- 原因：map aggregation
+-- map aggregation使用哈希表存储group by/distinct key和他们的aggregation结果。
+-- aggregate结果字段过多，或group by/distinct key的散度过大，可能导致内存占用过多。
+-- 修复：
+-- 减小hive.map.aggr.hash.percentmemory设定（默认为0.5，即使用50%的child堆内存）。
+
+-- 原因：join
+-- join需要cache所有相同join key的非驱动表的记录
+-- 修复：
+-- 检查是否把大表设定为驱动表（大表写在join的最右边）。
+-- 如果已经设定正确的驱动表，减小hive.join.emit.interval设定（默认为1000，即每1000行的join结果集输出一次）。
+
+-- 原因：map join
+-- map join需要cache全部小表的所有数据
+-- 修复：
+-- 检查小表是否足够小。如果小表超过1G，考虑不要使用map join。
