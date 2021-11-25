@@ -1,0 +1,103 @@
+# 1. Hive中的可用压缩编解码器
+要在 Hive 中启用压缩，首先我们需要找出 Hadoop 集群上可用的压缩编解码器，我们可以使用下面的 set 命令列出可用的压缩编解码器。
+
+```
+    > set io.compression.codecs;
+
+io.compression.codecs=org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.DeflateCodec,org.apache.hadoop.io.compress.SnappyCodec,org.apache.hadoop.io.compress.Lz4Codec
+
+  ```
+  
+  
+## 2. 在中间数据上启用压缩
+提交后，一个复杂的 Hive 查询通常会转换为一系列多阶段 MapReduce 作业，这些作业将通过 Hive 引擎进行链接以完成整个查询。因此，这里的 ‘中间输出’ 是指前一个 MapReduce 作业的输出，将会作为下一个 MapReduce 作业的输入数据。
+
+可以通过使用 Hive Shell 中的 set 命令或者修改 hive-site.xml 配置文件来修改 hive.exec.compress.intermediate 属性，这样我们就可以在 Hive Intermediate 输出上启用压缩。
+
+```
+<property>
+   <name>hive.exec.compress.intermediate</name>
+   <value>true</value>
+   <description>
+     This controls whether intermediate files produced by Hive between multiple map-reduce jobs are compressed.
+     The compression codec and other options are determined from Hadoop config variables mapred.output.compress*
+   </description>
+</property>
+<property>
+   <name>hive.intermediate.compression.codec</name>
+   <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+   <description/>
+</property>
+<property>
+   <name>hive.intermediate.compression.type</name>
+   <value>BLOCK</value>
+   <description/>
+</property>
+```
+
+或者我们可以使用 set 命令在 hive shell 中设置这些属性，如下所示:
+
+```
+hive> set hive.exec.compress.intermediate=true;
+hive> set hive.intermediate.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+hive> set hive.intermediate.compression.type=BLOCK;
+```
+
+
+## 3. 在最终输出上启用压缩
+通过设置以下属性，我们可以在 Hive shell 中的最终输出上启用压缩:
+
+```
+<property>
+  <name>hive.exec.compress.output</name>
+  <value>true</value>
+  <description>
+    This controls whether the final outputs of a query (to a local/HDFS file or a Hive table) is compressed.
+    The compression codec and other options are determined from Hadoop config variables mapred.output.compress*
+  </description>
+</property>
+```
+
+或者
+```
+hive> set hive.exec.compress.output=true;
+hive> set mapreduce.output.fileoutputformat.compress=true;
+hive> set mapreduce.output.fileoutputformat.compress.codec=org.apache.hadoop.io.compress.GzipCodec;  
+hive> set mapreduce.output.fileoutputformat.compress.type=BLOCK;
+```
+
+## 4. 配置mapreduce默认输出压缩格式
+
+https://hadoop.apache.org/docs/current/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
+
+搜索compress，大概有7个参数
+
+```
+mapreduce.output.fileoutputformat.compress	false	Should the job outputs be compressed?
+mapreduce.output.fileoutputformat.compress.type	RECORD	If the job outputs are to compressed as SequenceFiles, how should they be compressed? Should be one of NONE, RECORD or BLOCK.
+mapreduce.output.fileoutputformat.compress.codec	org.apache.hadoop.io.compress.DefaultCodec	If the job outputs are compressed, how should they be compressed?
+mapreduce.map.output.compress	false	Should the outputs of the maps be compressed before being sent across the network. Uses SequenceFile compression.
+mapreduce.map.output.compress.codec	org.apache.hadoop.io.compress.DefaultCodec	If the map outputs are compressed, how should they be compressed? 
+```
+
+查看支持的压缩格式
+
+```
+[root@data03 tpcds-gen]# hadoop checknative -a
+21/11/25 17:48:21 INFO bzip2.Bzip2Factory: Successfully loaded & initialized native-bzip2 library system-native
+21/11/25 17:48:21 INFO zlib.ZlibFactory: Successfully loaded & initialized native-zlib library
+Native library checking:
+hadoop:  true /opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/lib/hadoop/lib/native/libhadoop.so.1.0.0
+zlib:    true /lib64/libz.so.1
+zstd  :  true /opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/lib/hadoop/lib/native/libzstd.so.1
+snappy:  true /opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/lib/hadoop/lib/native/libsnappy.so.1
+lz4:     true revision:10301
+bzip2:   true /lib64/libbz2.so.1
+openssl: true /lib64/libcrypto.so
+ISA-L:   true /opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/lib/hadoop/lib/native/libisal.so.2
+
+```
+
+
+
+
